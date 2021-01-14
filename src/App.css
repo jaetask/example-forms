@@ -90,7 +90,6 @@ iframe {
   width: 100%;
   min-height: 300vh;
 }
-
 div.field {
   padding: 12px;
   line-height: 24px;
@@ -122,4 +121,10 @@ div.submitted {
 }
 div.submitting {
   background-color: #df7116;
+}
+div.lastEvent {
+  margin-top: 12px;
+  border-radius: 12px;
+  font-family: monospace;
+  white-space: pre;
 }

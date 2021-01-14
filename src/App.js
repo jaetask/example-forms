@@ -104,6 +104,9 @@ function App() {
           {state.matches("submitted") && (
             <div className="submitted">Submitted</div>
           )}
+          <div className="lastEvent">
+            {JSON.stringify(state.event, null, 2)}
+          </div>
         </form>
       </main>
     </div>
