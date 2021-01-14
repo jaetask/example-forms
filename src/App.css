@@ -112,10 +112,14 @@ div.buttons > button {
 }
 div.submitting,
 div.submitted {
-  background-color: silver;
+  background-color: #1b6094;
+  color: white;
   margin-left: 12px;
   margin-right: 12px;
   border-radius: 12px;
   padding: 12px;
   text-align: center;
+}
+div.submitting {
+  background-color: #df7116;
 }

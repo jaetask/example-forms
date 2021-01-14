@@ -20,6 +20,16 @@ const buildMachine = () => {
     initialValues: {
       username: "jaetask",
     },
+    submitting: {
+      after: {
+        2250: "submitted",
+      },
+    },
+    submitted: {
+      after: {
+        1000: "form.hist",
+      },
+    },
   });
 };
 
