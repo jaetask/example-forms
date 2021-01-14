@@ -25,8 +25,14 @@ const buildMachine = () => {
 
 const formMachine = Machine(buildMachine());
 
+const fieldValue = (state, name) => state?.context?.values[name];
+const isFieldDisabled = (state, name) =>
+  state.matches(`form.${name}.enable.disabled`);
+
 function App() {
   const [state, send] = useMachine(formMachine, { devTools: true });
+  console.log("state.value", state.value);
+
   return (
     <div className="app">
       <main>
@@ -40,7 +46,8 @@ function App() {
             <TextInput
               name="username"
               send={send}
-              value={state.context.values.username}
+              value={fieldValue(state, "username")}
+              disabled={isFieldDisabled(state, "username")}
             />
           </div>
           <div className="field">
@@ -48,22 +55,45 @@ function App() {
             <TextInput
               name="password"
               send={send}
-              value={state.context.values.password}
+              value={fieldValue(state, "password")}
+              disabled={isFieldDisabled(state, "password")}
             />
           </div>
 
           <div className="buttons">
-            <button name="resetForm" onClick={() => send(actions.reset())}>
+            <button
+              name="resetForm"
+              onClick={(e) => {
+                e.preventDefault();
+                send(actions.reset());
+              }}
+              disabled={
+                state.matches("resetting") ||
+                state.matches("submitting") ||
+                state.matches("submitted")
+              }
+            >
               Reset
             </button>
             <button
               type="submit"
               name="submitForm"
               onClick={() => send("SUBMIT")}
+              disabled={
+                state.matches("resetting") ||
+                state.matches("submitting") ||
+                state.matches("submitted")
+              }
             >
               Submit
             </button>
           </div>
+          {state.matches("submitting") && (
+            <div className="submitting">Submitting</div>
+          )}
+          {state.matches("submitted") && (
+            <div className="submitted">Submitted</div>
+          )}
         </form>
       </main>
     </div>

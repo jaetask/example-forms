@@ -79,6 +79,9 @@ select {
 
 /* App specific code */
 
+main {
+  max-width: 50%;
+}
 .app {
   padding: 24px;
 }
@@ -98,6 +101,7 @@ label {
 }
 input.textInput {
   margin-left: 20px;
+  width: calc(100% - 20px - 100px);
 }
 div.buttons {
   padding: 12px;
@@ -105,4 +109,13 @@ div.buttons {
 }
 div.buttons > button {
   margin-right: 10px;
+}
+div.submitting,
+div.submitted {
+  background-color: silver;
+  margin-left: 12px;
+  margin-right: 12px;
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
 }

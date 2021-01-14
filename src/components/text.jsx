@@ -1,7 +1,7 @@
 import { actions } from "xstate-form";
 
 // we pass in send here but it could easily come from context
-const TextInput = ({ name, value = "", send }) => (
+const TextInput = ({ name, value = "", send, disabled = false }) => (
   <input
     type="text"
     name={name}
@@ -16,6 +16,7 @@ const TextInput = ({ name, value = "", send }) => (
     onChange={(e) => {
       send(actions.change(name, e.target.value));
     }}
+    disabled={disabled}
   />
 );
 
