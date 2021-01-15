@@ -80,7 +80,7 @@ select {
 /* App specific code */
 
 main {
-  max-width: 50%;
+  max-width: 80%;
 }
 .app {
   padding: 24px;
@@ -100,13 +100,17 @@ label {
 }
 input.textInput {
   margin-left: 20px;
-  width: calc(100% - 20px - 100px);
+  width: 200px;
+  margin-right: 20px;
+}
+input.invisible {
+  display: none;
 }
 div.buttons {
   padding: 12px;
   line-height: 24px;
 }
-div.buttons > button {
+button {
   margin-right: 10px;
 }
 div.submitting,

@@ -2,8 +2,9 @@ import "./App.css";
 import { actions, form, fields } from "xstate-form";
 import { Machine } from "xstate";
 import { inspect } from "@xstate/inspect";
-import { useMachine } from "@xstate/react";
+import useFormMachine from "./hooks/useFormMachine";
 import TextInput from "./components/text";
+import TextControl from "./components/text-control";
 
 inspect({
   iframe: false,
@@ -35,13 +36,19 @@ const buildMachine = () => {
 
 const formMachine = Machine(buildMachine());
 
-const fieldValue = (state, name) => state?.context?.values[name];
-const isFieldDisabled = (state, name) =>
-  state.matches(`form.${name}.enable.disabled`);
-
 function App() {
-  const [state, send] = useMachine(formMachine, { devTools: true });
+  // eslint-disable-next-line no-unused-vars
+  const {
+    state,
+    send,
+    fieldValue,
+    isFieldDisabled,
+    isFieldVisible,
+  } = useFormMachine(formMachine, {
+    devTools: true,
+  });
   console.log("state.value", state.value);
+  console.log("state.event", state.event);
 
   return (
     <div className="app">
@@ -51,24 +58,56 @@ function App() {
             e.preventDefault();
           }}
         >
-          <div className="field">
-            <label for="username">Name:</label>
-            <TextInput
-              name="username"
-              send={send}
-              value={fieldValue(state, "username")}
-              disabled={isFieldDisabled(state, "username")}
-            />
-          </div>
-          <div className="field">
-            <label for="password">Password:</label>
-            <TextInput
-              name="password"
-              send={send}
-              value={fieldValue(state, "password")}
-              disabled={isFieldDisabled(state, "password")}
-            />
-          </div>
+          <table>
+            <tbody>
+              <tr>
+                <td className="field">
+                  <label for="username">Name:</label>
+                </td>
+                <td>
+                  <TextInput
+                    disabled={isFieldDisabled("username")}
+                    name="username"
+                    send={send}
+                    value={fieldValue("username")}
+                    visible={isFieldVisible("username")}
+                  />
+                </td>
+                <td>
+                  <TextControl
+                    disabled={isFieldDisabled("username")}
+                    matches={state.matches}
+                    name="username"
+                    send={send}
+                    visible={isFieldVisible("username")}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td className="field">
+                  <label for="password">Password:</label>
+                </td>
+                <td>
+                  <TextInput
+                    disabled={isFieldDisabled("password")}
+                    name="password"
+                    send={send}
+                    value={fieldValue("password")}
+                    visible={isFieldVisible("password")}
+                  />
+                </td>
+                <td>
+                  <TextControl
+                    disabled={isFieldDisabled("password")}
+                    matches={state.matches}
+                    name="password"
+                    send={send}
+                    visible={isFieldVisible("password")}
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
 
           <div className="buttons">
             <button
@@ -77,11 +116,7 @@ function App() {
                 e.preventDefault();
                 send(actions.reset());
               }}
-              disabled={
-                state.matches("resetting") ||
-                state.matches("submitting") ||
-                state.matches("submitted")
-              }
+              disabled={!state.matches("form")}
             >
               Reset
             </button>
@@ -89,11 +124,7 @@ function App() {
               type="submit"
               name="submitForm"
               onClick={() => send("SUBMIT")}
-              disabled={
-                state.matches("resetting") ||
-                state.matches("submitting") ||
-                state.matches("submitted")
-              }
+              disabled={!state.matches("form")}
             >
               Submit
             </button>
