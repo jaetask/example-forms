@@ -106,6 +106,18 @@ input.textInput {
 input.invisible {
   display: none;
 }
+
+/* Highklight the dirrect field states */
+.focused {
+  border: 2px solid green;
+}
+.invalid {
+  border: 2px solid red;
+}
+.disabled {
+  border: 2px solid orange;
+}
+
 div.buttons {
   padding: 12px;
   line-height: 24px;
@@ -126,7 +138,8 @@ div.submitted {
 div.submitting {
   background-color: #df7116;
 }
-div.lastEvent {
+div.lastEvent,
+div.stateValue {
   margin-top: 12px;
   border-radius: 12px;
   font-family: monospace;

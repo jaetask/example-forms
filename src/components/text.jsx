@@ -8,12 +8,21 @@ const TextInput = ({
   send,
   disabled = false,
   visible = true,
+  valid = true,
+  focused = false,
 }) => (
   <input
     type="text"
     name={name}
     value={value}
-    className={classnames("textInput", !visible ? "invisible" : null)}
+    className={classnames([
+      "textInput",
+      // show off all the states via css ..
+      focused ? "focused" : null,
+      disabled ? "disabled" : null,
+      !visible ? "invisible" : null,
+      !valid ? "invalid" : null,
+    ])}
     onFocus={() => {
       send(actions.focus(name));
     }}

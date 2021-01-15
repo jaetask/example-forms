@@ -5,6 +5,7 @@ const TextControl = ({
   send,
   disabled = false,
   visible = true,
+  valid = true,
   matches,
 }) => (
   <>
@@ -27,6 +28,16 @@ const TextControl = ({
       disabled={!matches("form")}
     >
       {visible ? "Hide" : "Show"}
+    </button>
+    <button
+      name={`${name}Valid`}
+      onClick={(e) => {
+        e.preventDefault();
+        valid ? send(actions.invalid(name)) : send(actions.valid(name));
+      }}
+      disabled={!matches("form")}
+    >
+      {valid ? "Invalid" : "Valid"}
     </button>
   </>
 );

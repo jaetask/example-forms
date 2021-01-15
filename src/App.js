@@ -20,6 +20,7 @@ const buildMachine = () => {
     },
     initialValues: {
       username: "jaetask",
+      password: "ThisIsTheWay",
     },
     submitting: {
       after: {
@@ -37,18 +38,17 @@ const buildMachine = () => {
 const formMachine = Machine(buildMachine());
 
 function App() {
-  // eslint-disable-next-line no-unused-vars
   const {
-    state,
-    send,
     fieldValue,
     isFieldDisabled,
+    isFieldFocused,
+    isFieldValid,
     isFieldVisible,
+    send,
+    state,
   } = useFormMachine(formMachine, {
     devTools: true,
   });
-  console.log("state.value", state.value);
-  console.log("state.event", state.event);
 
   return (
     <div className="app">
@@ -71,6 +71,8 @@ function App() {
                     send={send}
                     value={fieldValue("username")}
                     visible={isFieldVisible("username")}
+                    valid={isFieldValid("username")}
+                    focused={isFieldFocused("username")}
                   />
                 </td>
                 <td>
@@ -80,6 +82,7 @@ function App() {
                     name="username"
                     send={send}
                     visible={isFieldVisible("username")}
+                    valid={isFieldValid("username")}
                   />
                 </td>
               </tr>
@@ -94,6 +97,8 @@ function App() {
                     send={send}
                     value={fieldValue("password")}
                     visible={isFieldVisible("password")}
+                    valid={isFieldValid("password")}
+                    focused={isFieldFocused("password")}
                   />
                 </td>
                 <td>
@@ -103,12 +108,12 @@ function App() {
                     name="password"
                     send={send}
                     visible={isFieldVisible("password")}
+                    valid={isFieldValid("password")}
                   />
                 </td>
               </tr>
             </tbody>
           </table>
-
           <div className="buttons">
             <button
               name="resetForm"
@@ -137,6 +142,9 @@ function App() {
           )}
           <div className="lastEvent">
             {JSON.stringify(state.event, null, 2)}
+          </div>
+          <div className="stateValue">
+            {JSON.stringify(state.value, null, 2)}
           </div>
         </form>
       </main>
