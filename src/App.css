@@ -117,6 +117,13 @@ input.invisible {
 .disabled {
   border: 2px solid orange;
 }
+div.fieldError {
+  background-color: #df7116;
+  color: white;
+  padding: 12px;
+  border-radius: 12px;
+  margin: 12px;
+}
 
 div.buttons {
   padding: 12px;

@@ -12,6 +12,17 @@ inspect({
 
 const buildMachine = () => {
   return form.form({
+    // example of simple JS validation func, could come from any validation library..
+    validate: (values, _event, _meta, _name) => {
+      const errors = {};
+      if (values.username.match(/[0-9]+/g)) {
+        errors.username = "Username cannot include a number";
+      }
+      if (values.password.length <= 8) {
+        errors.password = "Password must be > 8 chars";
+      }
+      return errors;
+    },
     fields: {
       username: fields.text("username"), //todo, provide method to extend field actions
       password: fields.text("password"),
@@ -35,7 +46,17 @@ const buildMachine = () => {
   });
 };
 
-const formMachine = Machine(buildMachine());
+// how to know when to validate? should be done via config, but where? in the meta?
+const formMachine = Machine(buildMachine(), {});
+
+/**
+ * Pass in logic fileds for now, but simplify via context later
+ * @param {*} param0
+ */
+const FieldError = ({ name, hasError, error }) => {
+  console.log(name, hasError, error);
+  return hasError ? <div className="fieldError">{error}</div> : null;
+};
 
 function App() {
   const {
@@ -44,6 +65,9 @@ function App() {
     isFieldFocused,
     isFieldValid,
     isFieldVisible,
+    hasErrors,
+    hasFieldError,
+    fieldError,
     send,
     state,
   } = useFormMachine(formMachine, {
@@ -86,6 +110,17 @@ function App() {
                   />
                 </td>
               </tr>
+              {hasFieldError("username") && (
+                <tr>
+                  <td colSpan="3">
+                    <FieldError
+                      name="username"
+                      hasError={hasFieldError("username")}
+                      error={fieldError("username")}
+                    />
+                  </td>
+                </tr>
+              )}
               <tr>
                 <td className="field">
                   <label for="password">Password:</label>
@@ -112,6 +147,17 @@ function App() {
                   />
                 </td>
               </tr>
+              {hasFieldError("password") && (
+                <tr>
+                  <td colSpan="3">
+                    <FieldError
+                      name="password"
+                      hasError={hasFieldError("password")}
+                      error={fieldError("password")}
+                    />
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
           <div className="buttons">
@@ -121,7 +167,7 @@ function App() {
                 e.preventDefault();
                 send(actions.reset());
               }}
-              disabled={!state.matches("form")}
+              disabled={!state.matches("form") || hasErrors}
             >
               Reset
             </button>
@@ -129,7 +175,7 @@ function App() {
               type="submit"
               name="submitForm"
               onClick={() => send("SUBMIT")}
-              disabled={!state.matches("form")}
+              disabled={!state.matches("form") || hasErrors}
             >
               Submit
             </button>
