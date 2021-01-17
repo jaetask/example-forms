@@ -11,7 +11,7 @@ inspect({
 });
 
 const buildMachine = () => {
-  return form.form({
+  const machine = form.form({
     // example of simple JS validation func, could come from any validation library..
     validate: (values, _event, _meta, _name) => {
       const errors = {};
@@ -44,6 +44,7 @@ const buildMachine = () => {
       },
     },
   });
+  return machine;
 };
 
 // how to know when to validate? should be done via config, but where? in the meta?
@@ -53,10 +54,8 @@ const formMachine = Machine(buildMachine(), {});
  * Pass in logic fileds for now, but simplify via context later
  * @param {*} param0
  */
-const FieldError = ({ name, hasError, error }) => {
-  console.log(name, hasError, error);
-  return hasError ? <div className="fieldError">{error}</div> : null;
-};
+const FieldError = ({ _name, hasError, error }) =>
+  hasError ? <div className="fieldError">{error}</div> : null;
 
 function App() {
   const {
@@ -188,6 +187,9 @@ function App() {
           )}
           <div className="lastEvent">
             {JSON.stringify(state.event, null, 2)}
+          </div>
+          <div className="stateValue">
+            {JSON.stringify(state.context, null, 2)}
           </div>
           <div className="stateValue">
             {JSON.stringify(state.value, null, 2)}

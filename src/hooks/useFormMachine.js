@@ -11,9 +11,20 @@ const getFormStates = (state) => {
   return state?.historyValue?.states?.form?.current;
 };
 
+// 1. how much of this could be moved into the main library?
+// 2. how much is implementation?
 const useFormMachine = (formMachine, options = {}) => {
   const [state, send, service] = useMachine(formMachine, options);
 
+  const { errors } = state.context;
+  const hasFieldError = (name) => errors[name] !== undefined;
+  const fieldError = (name) => errors[name];
+  const hasErrors = Object.keys(errors).length > 0;
+
+  // form.values = form state || historyValue if the form is in other states (e.g. submitting)
+  const formValues = getFormStates(state);
+
+  // things need to be created in this context to work corectly, but it sucks having them in here!
   const fieldValue = (name) => state?.context?.values[name];
 
   const isFieldEnabled = (name) => state.matches(`form.${name}.enable.enabled`);
@@ -21,38 +32,18 @@ const useFormMachine = (formMachine, options = {}) => {
   const isFieldDisabled = (name) =>
     state.matches(`form.${name}.enable.disabled`);
 
-  const isFieldVisible = (name) => {
-    const formValues = getFormStates(state);
-    return formValues && formValues[name]
+  const isFieldVisible = (name) =>
+    formValues && formValues[name]
       ? formValues[name]?.visible === "visible"
       : true;
-  };
 
-  const isFieldValid = (name) => {
-    const formValues = getFormStates(state);
-    return formValues && formValues[name]
-      ? formValues[name]?.valid === "valid"
-      : true;
-  };
+  const isFieldValid = (name) =>
+    formValues && formValues[name] ? formValues[name]?.valid === "valid" : true;
 
-  const isFieldFocused = (name) => {
-    const formValues = getFormStates(state);
-    return formValues && formValues[name]
+  const isFieldFocused = (name) =>
+    formValues && formValues[name]
       ? formValues[name]?.focus === "focused"
       : true;
-  };
-
-  const { errors } = state.context;
-  const hasFieldError = (name) => errors[name] !== undefined;
-  const fieldError = (name) => errors[name];
-  const hasErrors = Object.keys(errors).length > 0;
-
-  // Validation.
-  // if a form field does not validate then should it be in an invalid state?
-  // or should a value in context.errors be enough?
-
-  // for now, validation is going to run on _every_ state change,
-  // we can make this configurable later
 
   return {
     fieldError,
