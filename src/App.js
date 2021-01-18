@@ -1,84 +1,129 @@
 import "./App.css";
-import { actions, form, fields } from "xstate-form";
-import { Machine } from "xstate";
+import { actions, fields } from "xstate-form";
+import { Machine, assign, spawn, send } from "xstate";
 import { inspect } from "@xstate/inspect";
-import useFormMachine from "./hooks/useFormMachine";
 import TextInput from "./components/text";
 import TextControl from "./components/text-control";
+import { useMachine } from "@xstate/react";
+import { useEffect } from "react";
 
 inspect({
   iframe: false,
 });
 
-const buildMachine = () => {
-  const machine = form.form({
-    id: "myLoginForm",
-    // example of simple JS validation func, could come from any validation library..
-    validate: (values, _event, _meta, _name) => {
-      const errors = {};
-      if (values.username.match(/[0-9]+/g)) {
-        errors.username = "Username cannot include a number";
-      }
-      if (values.password.length <= 8) {
-        errors.password = "Password must be > 8 chars";
-      }
-      return errors;
+const machine = Machine(
+  {
+    id: "myForm",
+    initial: "form",
+    context: {
+      fieldDefinitions: [
+        {
+          name: "username",
+          type: "text",
+          validator: (c, e) => {
+            const errors = {};
+            if (c.value.match(/[0-9]+/g)) {
+              errors.username = "Username cannot include a number";
+            }
+            return errors;
+          },
+        },
+        { name: "password", type: "text" },
+        { name: "submitForm", type: "submit" },
+      ],
+      fields: [],
     },
-    fields: [
-      fields.text({ name: "username" }),
-      fields.text({ name: "password" }),
-      fields.submit({ name: "submitForm" }),
-    ],
-    initialValues: {
-      username: "jaetask",
-      password: "ThisIsTheWay",
-    },
-    submitting: {
-      after: {
-        2250: "submitted",
+    states: {
+      form: {
+        entry: "initFields",
+        on: {
+          VALIDATE: "validating",
+        },
+      },
+      validating: {
+        // forward the message to ALL fields
+        // entry: (c) => c.fields.map((field) => forwardTo(field.ref)), this works
+
+        // fields will report back, but where will we know they are all completed?
+        invoke: {
+          id: "validator",
+          src: (context, event) => (callback, onReceive) => {
+            // 1. forward events to ALL the children
+            // 2. wait upto X seconds for the children to response (async validating)
+            // 3. Count the number of children that have responded (via messages)
+            // 4. if all have responded
+            // 5. apply any form level validations
+            // 6. once form responded
+            // 7. notify all fields of they are valid or invalid (inc error message)
+            // 8. done.
+
+            // 1. forward events to ALL the children
+            // we could use forwardTo now that we send the same message
+            // context.fields.map((field) =>
+            //   callback({
+            //     type: "VALIDATE",
+            //     to: field.ref,
+            //     fieldName: field.name,
+            //   })
+            // );
+
+            onReceive((e) => {
+              console.log("Recieved", e);
+
+              // if we've received messages from all fields..
+
+              // and the fomrs completed validating..
+
+              // send them the VALIDATED message
+            });
+
+            // const id = setInterval(() => callback('INC'), 1000);
+
+            // Perform cleanup
+            return () => {};
+          },
+        },
       },
     },
-    resetting: {
-      after: {
-        10: "form.hist",
-      },
+  },
+  {
+    actions: {
+      initFields: assign({
+        fields: (c) => {
+          return c.fieldDefinitions.map((field) => {
+            let spawned = undefined;
+            const { name, type, validator } = field;
+            // todo: this could be much nicer..
+            if (type === "text") {
+              spawned = fields.text({ name, validator });
+            } else if (type === "submit") {
+              spawned = fields.submit({ name, validator });
+            }
+            return {
+              ...field,
+              ref: spawn(Machine(spawned), {
+                name,
+                autoForward: true,
+                sync: false,
+              }),
+            };
+          });
+        },
+      }),
     },
-    submitted: {
-      after: {
-        1000: "form.hist",
-      },
-    },
-  });
-  console.log("machine", machine);
+  }
+);
 
-  return machine;
-};
-
-// how to know when to validate? should be done via config, but where? in the meta?
-const formMachine = Machine(buildMachine(), {});
-
-/**
- * Pass in logic fileds for now, but simplify via context later
- * @param {*} param0
- */
-const FieldError = ({ _name, hasError, error }) =>
-  hasError ? <div className="fieldError">{error}</div> : null;
+console.log("machine", machine);
 
 function App() {
-  const {
-    fieldValue,
-    isFieldDisabled,
-    isFieldFocused,
-    isFieldValid,
-    isFieldVisible,
-    hasErrors,
-    hasFieldError,
-    fieldError,
-    send,
-    state,
-  } = useFormMachine(formMachine, {
-    devTools: true,
-  });
+  const [state, send, service] = useMachine(machine, { devTools: true });
+
+  useEffect(() => {
+    service.onTransition((state) => {
+      console.log("state.event", state.event);
+    });
+  }, [service]);
 
   return (
     <div className="app">
@@ -96,74 +141,20 @@ function App() {
                 </td>
                 <td>
                   <TextInput
-                    disabled={isFieldDisabled("username")}
                     name="username"
                     send={send}
-                    value={fieldValue("username")}
-                    visible={isFieldVisible("username")}
-                    valid={isFieldValid("username")}
-                    focused={isFieldFocused("username")}
+                    service={service}
+                    value={""}
                   />
                 </td>
                 <td>
                   <TextControl
-                    disabled={isFieldDisabled("username")}
                     matches={state.matches}
                     name="username"
                     send={send}
-                    visible={isFieldVisible("username")}
-                    valid={isFieldValid("username")}
                   />
                 </td>
               </tr>
-              {hasFieldError("username") && (
-                <tr>
-                  <td colSpan="3">
-                    <FieldError
-                      name="username"
-                      hasError={hasFieldError("username")}
-                      error={fieldError("username")}
-                    />
-                  </td>
-                </tr>
-              )}
-              <tr>
-                <td className="field">
-                  <label for="password">Password:</label>
-                </td>
-                <td>
-                  <TextInput
-                    disabled={isFieldDisabled("password")}
-                    name="password"
-                    send={send}
-                    value={fieldValue("password")}
-                    visible={isFieldVisible("password")}
-                    valid={isFieldValid("password")}
-                    focused={isFieldFocused("password")}
-                  />
-                </td>
-                <td>
-                  <TextControl
-                    disabled={isFieldDisabled("password")}
-                    matches={state.matches}
-                    name="password"
-                    send={send}
-                    visible={isFieldVisible("password")}
-                    valid={isFieldValid("password")}
-                  />
-                </td>
-              </tr>
-              {hasFieldError("password") && (
-                <tr>
-                  <td colSpan="3">
-                    <FieldError
-                      name="password"
-                      hasError={hasFieldError("password")}
-                      error={fieldError("password")}
-                    />
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
           <div className="buttons">
@@ -181,9 +172,17 @@ function App() {
               type="submit"
               name="submitForm"
               onClick={() => send("SUBMIT")}
-              disabled={!state.matches("form") || hasErrors}
+              disabled={!state.matches("form")}
             >
               Submit
+            </button>
+            <button
+              type="button"
+              name="validateForm"
+              onClick={() => send("VALIDATE")}
+              disabled={!state.matches("form")}
+            >
+              Validate
             </button>
           </div>
           {state.matches("submitting") && (
