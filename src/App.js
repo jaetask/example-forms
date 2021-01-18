@@ -12,6 +12,7 @@ inspect({
 
 const buildMachine = () => {
   const machine = form.form({
+    id: "myLoginForm",
     // example of simple JS validation func, could come from any validation library..
     validate: (values, _event, _meta, _name) => {
       const errors = {};
@@ -23,12 +24,11 @@ const buildMachine = () => {
       }
       return errors;
     },
-    fields: {
-      username: fields.text("username"), //todo, provide method to extend field actions
-      password: fields.text("password"),
-      // ...
-      submitForm: fields.submit("submitForm"),
-    },
+    fields: [
+      fields.text({ name: "username" }),
+      fields.text({ name: "password" }),
+      fields.submit({ name: "submitForm" }),
+    ],
     initialValues: {
       username: "jaetask",
       password: "ThisIsTheWay",
@@ -38,12 +38,19 @@ const buildMachine = () => {
         2250: "submitted",
       },
     },
+    resetting: {
+      after: {
+        10: "form.hist",
+      },
+    },
     submitted: {
       after: {
         1000: "form.hist",
       },
     },
   });
+  console.log("machine", machine);
+
   return machine;
 };
 
@@ -166,7 +173,7 @@ function App() {
                 e.preventDefault();
                 send(actions.reset());
               }}
-              disabled={!state.matches("form") || hasErrors}
+              disabled={!state.matches("form")}
             >
               Reset
             </button>
