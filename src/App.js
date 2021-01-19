@@ -1,31 +1,40 @@
 import "./App.css";
 import { actions, fields } from "xstate-form";
-import { Machine, assign, spawn, send } from "xstate";
+import { Machine, assign, spawn, forwardTo } from "xstate";
 import { inspect } from "@xstate/inspect";
 import TextInput from "./components/text";
 import TextControl from "./components/text-control";
-import { useMachine } from "@xstate/react";
+import { useMachine, useService } from "@xstate/react";
 import { useEffect } from "react";
+import { pure, raise } from "xstate/lib/actions";
 
 inspect({
   iframe: false,
 });
 
+function delay(t, v) {
+  return new Promise(function (resolve) {
+    setTimeout(resolve.bind(null, v), t);
+  });
+}
+
 const machine = Machine(
   {
     id: "myForm",
-    initial: "form",
+    initial: "init",
     context: {
       fieldDefinitions: [
         {
           name: "username",
           type: "text",
           validator: (c, e) => {
+            // contrived async validator example
             const errors = {};
             if (c.value.match(/[0-9]+/g)) {
               errors.username = "Username cannot include a number";
             }
-            return errors;
+
+            return delay(2500, errors);
           },
         },
         { name: "password", type: "text" },
@@ -34,53 +43,91 @@ const machine = Machine(
       fields: [],
     },
     states: {
-      form: {
+      init: {
         entry: "initFields",
+        after: {
+          10: "form",
+        },
+      },
+      form: {
         on: {
+          // forward all fieldName messages
+          "*": {
+            actions: forwardTo((_, e) => e.fieldName),
+            cond: (_, e) => e.fieldName !== undefined,
+          },
           VALIDATE: "validating",
         },
       },
       validating: {
+        entry: [
+          assign({
+            results: (c) => {
+              return {
+                expectingCount: c.fields
+                  .map((field) => field.type === "text")
+                  .filter(Boolean).length,
+                validationResults: [],
+                errors: {},
+              };
+            },
+          }),
+          pure((c: any) => {
+            c.fields.map((field) => {
+              field.ref.send("VALIDATE");
+            });
+          }),
+        ],
         // forward the message to ALL fields
         // entry: (c) => c.fields.map((field) => forwardTo(field.ref)), this works
 
         // fields will report back, but where will we know they are all completed?
         invoke: {
           id: "validator",
-          src: (context, event) => (callback, onReceive) => {
+          src: (context) => (callback, onReceive) => {
             // 1. forward events to ALL the children
-            // 2. wait upto X seconds for the children to response (async validating)
+            // 2. wait X seconds for the children to response (async validating)
             // 3. Count the number of children that have responded (via messages)
             // 4. if all have responded
             // 5. apply any form level validations
             // 6. once form responded
             // 7. notify all fields of they are valid or invalid (inc error message)
             // 8. done.
-
             // 1. forward events to ALL the children
-            // we could use forwardTo now that we send the same message
-            // context.fields.map((field) =>
-            //   callback({
-            //     type: "VALIDATE",
-            //     to: field.ref,
-            //     fieldName: field.name,
-            //   })
-            // );
-
-            onReceive((e) => {
-              console.log("Recieved", e);
-
-              // if we've received messages from all fields..
-
-              // and the fomrs completed validating..
-
-              // send them the VALIDATED message
-            });
-
-            // const id = setInterval(() => callback('INC'), 1000);
-
-            // Perform cleanup
-            return () => {};
+            // context.fields.map((field) => {
+            //   field.ref.send("VALIDATE");
+            // });
+            // 2. wait X seconds for the children to response (async validating)
+            // the children respond via VALIDATION_RESULT messages
+          },
+        },
+        on: {
+          VALIDATION_COMPLETE: "form",
+          VALIDATION_RESULT: {
+            // do nothing..
+            actions: [
+              assign({
+                // results: (c, e) => {
+                //   const validationResults = [...c.results.validationResults];
+                //   validationResults.push(e);
+                //   return validationResults;
+                // },
+                results: (c, e) => {
+                  const results = {
+                    expectingCount: c.results.expectingCount,
+                    validationResults: [...c.results.validationResults, e],
+                    errors: { ...c.results.errors, ...e.errors },
+                  };
+                  return results;
+                },
+              }),
+              pure((c) => {
+                return c.results.validationResults.length ===
+                  c.results.expectingCount
+                  ? raise("VALIDATION_COMPLETE")
+                  : undefined;
+              }),
+            ],
           },
         },
       },
@@ -103,7 +150,7 @@ const machine = Machine(
               ...field,
               ref: spawn(Machine(spawned), {
                 name,
-                autoForward: true,
+                autoForward: false,
                 sync: false,
               }),
             };
@@ -118,6 +165,8 @@ console.log("machine", machine);
 
 function App() {
   const [state, send, service] = useMachine(machine, { devTools: true });
+  const childService = service.children.get("username");
+  const [usernameState] = useService(childService ? childService : service);
 
   useEffect(() => {
     service.onTransition((state) => {
@@ -143,15 +192,17 @@ function App() {
                   <TextInput
                     name="username"
                     send={send}
-                    service={service}
-                    value={""}
+                    matches={usernameState.matches}
+                    value={usernameState.context.value}
                   />
                 </td>
                 <td>
                   <TextControl
-                    matches={state.matches}
                     name="username"
+                    disabled={usernameState.matches("enable.disabled")}
+                    matches={state.matches}
                     send={send}
+                    visible={usernameState.matches("visible.visible")}
                   />
                 </td>
               </tr>
@@ -179,8 +230,11 @@ function App() {
             <button
               type="button"
               name="validateForm"
-              onClick={() => send("VALIDATE")}
-              disabled={!state.matches("form")}
+              onClick={() =>
+                state.matches("validating")
+                  ? send("FORM_VALIDATION_COMPLETE")
+                  : send("VALIDATE")
+              }
             >
               Validate
             </button>

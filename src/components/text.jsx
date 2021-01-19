@@ -1,30 +1,21 @@
 import { actions } from "xstate-form";
 import classnames from "classnames";
-import { useService } from "@xstate/react";
 
-// inputs should not know about services!
-// this is aterrible idea!
-
-const TextInput = ({
-  name,
-  service, // todo, pass this is in properly, rapid prototyping..
-}) => {
-  // todo: I dont like that its here but..
-  const childService = service.children.get(name);
-  // we now have access to the child machine state
-  const [_parentState, send] = useService(service);
-  const [state] = useService(childService ? childService : service);
-
+/**
+ * Try to keep the Field components API clean
+ *
+ */
+const TextInput = ({ name, matches, send, value }) => {
   return (
     <input
       type="text"
       name={name}
-      value={state.context.value}
+      value={value}
       className={classnames([
         "textInput",
-        state.matches("enable.disabled") ? "disabled" : null,
-        state.matches("visible.invisible") ? "invisible" : null,
-        state.matches("valid.invalid") ? "invalid" : null,
+        matches("enable.disabled") ? "disabled" : null,
+        matches("visible.invisible") ? "invisible" : null,
+        matches("valid.invalid") ? "invalid" : null,
       ])}
       onFocus={() => {
         send(actions.focus(name));
@@ -35,7 +26,7 @@ const TextInput = ({
       onChange={(e) => {
         send(actions.change(name, e.target.value));
       }}
-      disabled={state.matches("enable.disabled")}
+      disabled={matches("enable.disabled")}
     />
   );
 };
